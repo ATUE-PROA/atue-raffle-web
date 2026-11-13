@@ -6,8 +6,6 @@ export const RAFFLE = {
   prizes: 1,
   pixKey: 'rifa@atue.com.br',
   pixHolder: 'ATUE',
-  adminEmail: 'admin@atue.local',
-  adminPassword: 'rifa123',
 } as const
 
 export const RAFFLE_CONTENT = {
@@ -115,15 +113,7 @@ export const RAFFLE_CONTENT = {
   admin: {
     title: 'Administração',
     description: 'Confirme pagamentos, acompanhe a arrecadação e encerre a rifa.',
-    loginTitle: 'Acesso restrito',
-    loginDescription: 'Entre com as credenciais de administrador para gerenciar a rifa.',
-    email: 'E-mail',
-    password: 'Senha',
-    login: 'Entrar',
-    logout: 'Sair',
     backToRaffle: 'Voltar à rifa',
-    demoHint: 'Demonstração: admin@atue.local / rifa123',
-    loginError: 'E-mail ou senha inválidos.',
     cards: {
       pending: 'Reservas pendentes',
       paid: 'Reservas pagas',

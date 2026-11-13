@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -17,7 +17,6 @@ import { WinnersList } from '@/components/raffle/winners-list'
 import { Button } from '@/components/ui/button'
 import { FormAlert } from '@/components/ui/form-alert'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Table,
   TableBody,
@@ -26,108 +25,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { RAFFLE, RAFFLE_CONTENT } from '@/content/raffle'
+import { RAFFLE_CONTENT } from '@/content/raffle'
 import { useRaffle } from '@/contexts/raffle-provider'
 import { formatBRL, padNumber } from '@/lib/raffle'
 import type { Reservation } from '@/types/raffle'
 
-const ADMIN_SESSION_KEY = 'rifa-admin-session'
-
+// Produção: proteja /admin no edge (Cloudflare Access); não há senha no cliente.
 export function AdminPage() {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem(ADMIN_SESSION_KEY) === '1')
-
-  function handleLogout() {
-    sessionStorage.removeItem(ADMIN_SESSION_KEY)
-    setAuthed(false)
-  }
-
-  return authed ? (
-    <AdminDashboard onLogout={handleLogout} />
-  ) : (
-    <AdminLogin
-      onSuccess={() => {
-        sessionStorage.setItem(ADMIN_SESSION_KEY, '1')
-        setAuthed(true)
-      }}
-    />
-  )
-}
-
-function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState(false)
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (email.trim() === RAFFLE.adminEmail && password === RAFFLE.adminPassword) {
-      onSuccess()
-      return
-    }
-    setError(true)
-  }
-
-  return (
-    <main className="mx-auto w-full max-w-md px-4 py-16 sm:px-6">
-      <div className="border-t border-border pt-8">
-        <h1 className="text-section">{RAFFLE_CONTENT.admin.loginTitle}</h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          {RAFFLE_CONTENT.admin.loginDescription}
-        </p>
-
-        <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
-          <div className="grid gap-2">
-            <Label htmlFor="admin-email">{RAFFLE_CONTENT.admin.email}</Label>
-            <Input
-              id="admin-email"
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(event) => {
-                setEmail(event.target.value)
-                setError(false)
-              }}
-              required
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="admin-password">{RAFFLE_CONTENT.admin.password}</Label>
-            <Input
-              id="admin-password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => {
-                setPassword(event.target.value)
-                setError(false)
-              }}
-              required
-            />
-          </div>
-
-          {error ? (
-            <p role="alert" className="text-sm text-destructive">
-              {RAFFLE_CONTENT.admin.loginError}
-            </p>
-          ) : null}
-
-          <Button type="submit" variant="brand" size="xl">
-            {RAFFLE_CONTENT.admin.login}
-          </Button>
-        </form>
-
-        <p className="mt-4 text-xs text-muted-foreground">{RAFFLE_CONTENT.admin.demoHint}</p>
-
-        <Link
-          to="/"
-          className="mt-6 inline-block text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:underline focus-visible:outline-none"
-        >
-          {RAFFLE_CONTENT.admin.backToRaffle}
-        </Link>
-      </div>
-    </main>
-  )
+  return <AdminDashboard />
 }
 
 type PendingAction =
@@ -137,7 +42,7 @@ type PendingAction =
   | { type: 'reopen' }
   | { type: 'reset' }
 
-function AdminDashboard({ onLogout }: { onLogout: () => void }) {
+function AdminDashboard() {
   const {
     state,
     stats,
@@ -188,19 +93,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             {RAFFLE_CONTENT.admin.description}
           </p>
         </div>
-        <Button type="button" variant="outline" onClick={onLogout}>
-          {RAFFLE_CONTENT.admin.logout}
+        <Button asChild variant="outline">
+          <Link to="/">{RAFFLE_CONTENT.admin.backToRaffle}</Link>
         </Button>
       </header>
-
-      <p className="mt-4 text-sm">
-        <Link
-          to="/"
-          className="text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:underline focus-visible:outline-none"
-        >
-          {RAFFLE_CONTENT.admin.backToRaffle}
-        </Link>
-      </p>
 
       <section className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-5" aria-label="Indicadores">
         <MetricCard label={RAFFLE_CONTENT.admin.cards.pending} value={String(allPending.length)} />
