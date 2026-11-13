@@ -1,0 +1,3 @@
+# Chave usada pelo painel /admin e pelos endpoints de escrita.
+# Copie para worker/.dev.vars e troque por um valor longo e aleatório.
+ADMIN_KEY=change-me
