@@ -4,6 +4,13 @@ Sistema de **rifa com fins pedagógicos** da **ATUE**, plataforma de conformidad
 
 A interface usa a identidade visual do `atue-web`: mesma paleta, tipografia (Fraunces + Geist), primitivos shadcn/Radix e padrões de layout plano.
 
+## Stack
+
+- **Frontend:** React 19 + Vite + Tailwind v4 (Cloudflare Pages).
+- **API:** Cloudflare Worker em `worker/` (rotas `/api/*`).
+- **Banco:** Cloudflare D1 (SQLite), migrações em `worker/migrations/`.
+- **Admin:** `/admin` protegido por chave (`x-admin-key`) e, em produção, por Cloudflare Access.
+
 ## O que tem
 
 - Grade de 500 números com estados (disponível, selecionado, reservado e pago) e busca.
@@ -11,48 +18,71 @@ A interface usa a identidade visual do `atue-web`: mesma paleta, tipografia (Fra
 - Preço promocional: 1 número por R$ 3,00 ou 5 por R$ 12,00.
 - Reserva com nome, WhatsApp e indicação, com revisão antes de finalizar.
 - Página de pagamento com chave PIX, resumo dos números e instruções.
-- Painel admin em `/admin` com indicadores, progresso, arrecadação por mês, ranking de indicações, confirmação/cancelamento de reservas, exportação CSV e sorteio do prêmio de R$ 200,00.
+- Painel admin com indicadores, progresso, arrecadação por mês, ranking de indicações, confirmação/cancelamento de reservas, exportação CSV e sorteio do prêmio de R$ 200,00.
 - Rifa encerrada exibe os vencedores na página pública.
 
-## Arte da rifa
+A grade é atualizada automaticamente a cada 15 segundos.
 
-A coluna ao lado do texto principal exibe a imagem `public/rifa-art.webp` em um quadro de até 320 px. Enquanto o arquivo não existir, aparece um placeholder. Recomenda-se WebP ou JPG quadrado (por exemplo, 1200 × 1200 px).
+## Arte e marca
 
-A navbar usa o lockup horizontal em `public/atue-logo.svg` (texto escuro, tema claro) e `public/atue-logo-dark.svg` (texto claro, tema escuro).
+A coluna ao lado do texto principal exibe `public/rifa-art.webp` em um quadro de até 320 px. Enquanto o arquivo não existir, aparece um placeholder. Recomenda-se WebP ou JPG quadrado (por exemplo, 1200 × 1200 px).
 
-## Rodando
+A navbar usa o lockup horizontal em `public/atue-logo.svg` (tema claro) e `public/atue-logo-dark.svg` (tema escuro).
+
+## Rodando localmente
 
 ```bash
 npm install
-npm run dev
+cp worker/.dev.vars.example worker/.dev.vars   # troque ADMIN_KEY
+npm run db:migrate:local
+npm run dev:api                                # API em :8787
+npm run dev                                    # Vite em :5173 (proxy de /api)
 ```
 
-Build de produção: `npm run build` · Lint: `npm run lint` · Formatação: `npm run format:check`.
+Acesse `http://localhost:5173`. O painel fica em `/admin` e pede a `ADMIN_KEY` configurada em `worker/.dev.vars`.
 
-## Deploy (Cloudflare Pages)
+Scripts: `npm run build` · `npm run lint` · `npm run format:check` · `npm run worker:check`.
 
-- Build command: `npm run build`
-- Output directory: `dist`
-- `public/_redirects` garante o fallback da SPA (`/* /index.html 200`) para as rotas `/pagamento` e `/admin`.
-- O painel `/admin` não tem senha no cliente. Em produção, proteja essa rota no edge com **Cloudflare Access** (Zero Trust) ou um Worker com autenticação. Nunca coloque credenciais no bundle: tudo em `VITE_*` fica visível para qualquer visitante.
+## Deploy na Cloudflare
 
-## Persistência
+1. **Criar o banco:** `npx wrangler d1 create atue-raffle` e cole o `database_id` retornado em `worker/wrangler.jsonc`.
+2. **Aplicar as migrações:** `npm run db:migrate`.
+3. **Definir a chave do admin:** `npx wrangler secret put ADMIN_KEY --config worker/wrangler.jsonc`.
+4. **Publicar a API:** `npm run deploy:api`.
+5. **Publicar o frontend no Pages:** build `npm run build`, saída `dist` e variável `VITE_API_URL=https://<seu-worker>.workers.dev`.
+6. **Restringir a origem:** ajuste `ALLOWED_ORIGIN` em `worker/wrangler.jsonc` para a URL do Pages e rode `npm run deploy:api` de novo.
+7. **Proteger o painel:** crie uma aplicação no **Cloudflare Access** para `/admin*` (Zero Trust). A chave do admin continua sendo validada pelo Worker.
 
-Os dados são salvos em `localStorage` (chave `rifa-state-v1`), o que permite testar o fluxo completo em um único navegador. Não há backend nem atualização em tempo real entre dispositivos. No painel admin, use **Reabrir rifa** para desfazer o encerramento ou **Reiniciar demonstração** para apagar reservas, pagamentos e vencedores.
+`public/_redirects` (`/* /index.html 200`) garante o fallback da SPA no Pages.
 
-Para operar de verdade, troque o `localStorage` por uma API com banco de dados. Na Cloudflare, a combinação recomendada é **Pages + Workers + D1**. A chave PIX fica em `src/content/raffle.ts`.
+## API
+
+| Rota                                  | Método | Acesso                 |
+| ------------------------------------- | ------ | ---------------------- |
+| `/api/raffle`                         | GET    | público                |
+| `/api/reservations`                   | POST   | público                |
+| `/api/reservations/:id`               | GET    | público                |
+| `/api/admin/data`                     | GET    | chave/cookie do Access |
+| `/api/admin/reservations/:id/confirm` | POST   | chave/cookie do Access |
+| `/api/admin/reservations/:id/cancel`  | POST   | chave/cookie do Access |
+| `/api/admin/close`                    | POST   | chave/cookie do Access |
+| `/api/admin/reopen`                   | POST   | chave/cookie do Access |
+| `/api/admin/reset`                    | POST   | chave/cookie do Access |
+
+A chave do admin é digitada no painel e guardada apenas no `sessionStorage`; ela não vai no bundle.
 
 ## Estrutura
 
 ```text
 src/
-  components/
-    layout/    header, footer, tema e shell
-    raffle/    grade, reserva, vencedores e confirmação
-    ui/        primitivos shadcn/Radix no padrão ATUE
-  content/     textos e configuração da rifa (pt-BR)
-  contexts/    estado da rifa + persistência local
-  lib/         preço, máscara, ocupação e sorteio
-  pages/       início, pagamento e administração
-  types/       contratos de reserva, vencedor e estado
+  components/   layout, raffle e primitivos ui
+  content/      textos e configuração da rifa (pt-BR)
+  contexts/     estado público + polling da API
+  lib/          preço, máscara e formatação
+  pages/        início, pagamento e administração
+  services/     cliente da API
+  types/        contratos de reserva, vencedor e snapshot
+worker/
+  src/          API (reservas, pagamentos, sorteio)
+  migrations/   schema do D1
 ```
