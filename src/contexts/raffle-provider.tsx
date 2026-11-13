@@ -4,191 +4,149 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 
 import { RAFFLE } from '@/content/raffle'
-import { buildOccupied, calculateTotal, createId, drawWinners, getStats } from '@/lib/raffle'
+import {
+  createReservation as createReservationRequest,
+  getRaffle,
+  getReservation,
+} from '@/services/api'
 import type {
   CreateReservationResult,
   OccupiedNumber,
-  RaffleState,
+  RaffleSnapshot,
   Reservation,
   ReservationInput,
   Stats,
   Winner,
 } from '@/types/raffle'
 
-const STORAGE_KEY = 'rifa-state-v1'
+const LAST_RESERVATION_KEY = 'rifa-last-reservation'
+const POLL_MS = 15000
 
-const EMPTY_STATE: RaffleState = {
-  reservations: [],
-  closed: false,
-  winners: [],
-  lastReservationId: null,
-}
-
-function loadState(): RaffleState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return EMPTY_STATE
-    const parsed = JSON.parse(raw) as Partial<RaffleState>
-    if (!Array.isArray(parsed.reservations)) return EMPTY_STATE
-    return {
-      reservations: parsed.reservations,
-      closed: Boolean(parsed.closed),
-      winners: Array.isArray(parsed.winners) ? parsed.winners : [],
-      lastReservationId: parsed.lastReservationId ?? null,
-    }
-  } catch {
-    return EMPTY_STATE
-  }
+const EMPTY_STATS: Stats = {
+  total: RAFFLE.totalNumbers,
+  available: RAFFLE.totalNumbers,
+  pending: 0,
+  paid: 0,
+  revenue: 0,
 }
 
 interface RaffleContextValue {
-  state: RaffleState
+  closed: boolean
+  winners: Winner[]
   occupied: Map<number, OccupiedNumber>
   stats: Stats
+  loading: boolean
+  error: string | null
   lastReservation: Reservation | null
-  createReservation: (input: ReservationInput) => CreateReservationResult
-  confirmPayment: (id: string) => void
-  cancelReservation: (id: string) => void
-  closeRaffle: () => Winner[]
-  reopenRaffle: () => void
-  resetRaffle: () => void
+  loadingReservation: boolean
+  refresh: () => Promise<void>
+  createReservation: (input: ReservationInput) => Promise<CreateReservationResult>
 }
 
 const RaffleContext = createContext<RaffleContextValue | null>(null)
 
-function persist(state: RaffleState) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // shortcut: sem localStorage os dados valem só nesta sessão
-  }
-}
-
 export function RaffleProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<RaffleState>(loadState)
+  const [snapshot, setSnapshot] = useState<RaffleSnapshot | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [lastReservation, setLastReservation] = useState<Reservation | null>(null)
+  const [loadingReservation, setLoadingReservation] = useState(() =>
+    Boolean(localStorage.getItem(LAST_RESERVATION_KEY)),
+  )
+  const lastId = useRef<string | null>(localStorage.getItem(LAST_RESERVATION_KEY))
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await getRaffle()
+      setSnapshot(data)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível carregar a rifa.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const refreshLastReservation = useCallback(async () => {
+    const id = lastId.current
+    if (!id) {
+      setLoadingReservation(false)
+      return
+    }
+    try {
+      const { reservation } = await getReservation(id)
+      setLastReservation(reservation)
+    } catch {
+      // Reserva removida no reset da demonstração.
+    } finally {
+      setLoadingReservation(false)
+    }
+  }, [])
 
   useEffect(() => {
-    persist(state)
-  }, [state])
-
-  const occupied = useMemo(() => buildOccupied(state.reservations), [state.reservations])
-  const stats = useMemo(
-    () => getStats(state.reservations, RAFFLE.totalNumbers),
-    [state.reservations],
-  )
-
-  const lastReservation = useMemo(
-    () =>
-      state.reservations.find((reservation) => reservation.id === state.lastReservationId) ?? null,
-    [state.lastReservationId, state.reservations],
-  )
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial + polling
+    void refresh()
+    void refreshLastReservation()
+    const timer = setInterval(() => {
+      void refresh()
+      void refreshLastReservation()
+    }, POLL_MS)
+    return () => clearInterval(timer)
+  }, [refresh, refreshLastReservation])
 
   const createReservation = useCallback(
-    (input: ReservationInput): CreateReservationResult => {
-      const numbers = [...new Set(input.numbers)].sort((a, b) => a - b)
-
-      if (state.closed) {
-        return { ok: false, error: 'A rifa está encerrada.' }
-      }
-      if (numbers.length === 0) {
-        return { ok: false, error: 'Selecione pelo menos um número.' }
-      }
-
-      const conflicts = numbers.filter((number) => occupied.has(number))
-      if (conflicts.length > 0) {
+    async (input: ReservationInput): Promise<CreateReservationResult> => {
+      try {
+        const reservation = await createReservationRequest(input)
+        lastId.current = reservation.id
+        localStorage.setItem(LAST_RESERVATION_KEY, reservation.id)
+        setLastReservation(reservation)
+        setLoadingReservation(false)
+        await refresh()
+        return { ok: true, reservation }
+      } catch (err) {
         return {
           ok: false,
-          error: `Números indisponíveis: ${conflicts.join(', ')}. Escolha outros.`,
+          error: err instanceof Error ? err.message : 'Não foi possível reservar.',
         }
       }
-
-      const reservation: Reservation = {
-        id: createId(),
-        customerName: input.customerName.trim(),
-        customerPhone: input.customerPhone.trim(),
-        indication: input.indication.trim(),
-        numbers,
-        totalAmount: calculateTotal(numbers.length),
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        confirmedAt: null,
-      }
-
-      setState((current) => ({
-        ...current,
-        reservations: [reservation, ...current.reservations],
-        lastReservationId: reservation.id,
-      }))
-
-      return { ok: true, reservation }
     },
-    [occupied, state.closed],
+    [refresh],
   )
 
-  const confirmPayment = useCallback((id: string) => {
-    setState((current) => ({
-      ...current,
-      reservations: current.reservations.map((reservation) =>
-        reservation.id === id
-          ? { ...reservation, status: 'paid', confirmedAt: new Date().toISOString() }
-          : reservation,
-      ),
-    }))
-  }, [])
-
-  const cancelReservation = useCallback((id: string) => {
-    setState((current) => ({
-      ...current,
-      reservations: current.reservations.map((reservation) =>
-        reservation.id === id ? { ...reservation, status: 'cancelled' } : reservation,
-      ),
-    }))
-  }, [])
-
-  const closeRaffle = useCallback((): Winner[] => {
-    const winners = drawWinners(state.reservations)
-    if (winners.length === 0) return []
-    setState((current) => ({ ...current, closed: true, winners }))
-    return winners
-  }, [state.reservations])
-
-  const reopenRaffle = useCallback(() => {
-    setState((current) => ({ ...current, closed: false, winners: [] }))
-  }, [])
-
-  const resetRaffle = useCallback(() => {
-    setState({ ...EMPTY_STATE })
-  }, [])
+  const occupied = useMemo(
+    () => new Map((snapshot?.occupied ?? []).map((entry) => [entry.number, entry])),
+    [snapshot],
+  )
 
   const value = useMemo<RaffleContextValue>(
     () => ({
-      state,
+      closed: snapshot?.closed ?? false,
+      winners: snapshot?.winners ?? [],
       occupied,
-      stats,
+      stats: snapshot?.stats ?? EMPTY_STATS,
+      loading,
+      error,
       lastReservation,
+      loadingReservation,
+      refresh,
       createReservation,
-      confirmPayment,
-      cancelReservation,
-      closeRaffle,
-      reopenRaffle,
-      resetRaffle,
     }),
     [
-      cancelReservation,
-      closeRaffle,
-      confirmPayment,
       createReservation,
+      error,
       lastReservation,
+      loading,
+      loadingReservation,
       occupied,
-      reopenRaffle,
-      resetRaffle,
-      state,
-      stats,
+      refresh,
+      snapshot,
     ],
   )
 

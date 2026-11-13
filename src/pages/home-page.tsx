@@ -60,7 +60,7 @@ function RaffleArt() {
 }
 
 export function HomePage() {
-  const { occupied, stats, state } = useRaffle()
+  const { occupied, stats, closed, winners, loading, error, refresh } = useRaffle()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState<'auto' | 'manual'>('auto')
@@ -108,7 +108,19 @@ export function HomePage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
+    <main aria-busy={loading} className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
+      {error ? (
+        <p role="alert" className="mb-6 text-sm text-destructive">
+          {error}{' '}
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="font-medium underline underline-offset-4"
+          >
+            Tentar novamente
+          </button>
+        </p>
+      ) : null}
       <section className="grid gap-8 lg:grid-cols-[1fr_300px] lg:items-start">
         <div>
           <p className="text-eyebrow text-blue-600">{RAFFLE_CONTENT.hero.eyebrow}</p>
@@ -138,7 +150,7 @@ export function HomePage() {
         <RaffleArt />
       </section>
 
-      {state.closed ? (
+      {closed ? (
         <section className="mt-12 border-t border-border pt-8" aria-labelledby="closed-title">
           <div className="flex items-center gap-3">
             <Ticket aria-hidden="true" className="size-5 text-blue-600" />
@@ -152,7 +164,7 @@ export function HomePage() {
             </div>
           </div>
           <div className="mt-6">
-            <WinnersList winners={state.winners} />
+            <WinnersList winners={winners} />
           </div>
         </section>
       ) : (
@@ -314,7 +326,7 @@ export function HomePage() {
                 <NumberGrid
                   occupied={occupied}
                   selected={selected}
-                  closed={state.closed}
+                  closed={closed}
                   search={search}
                   visibleCount={visibleCount}
                   onToggle={toggleNumber}

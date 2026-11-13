@@ -76,6 +76,7 @@ export const RAFFLE_CONTENT = {
     back: 'Voltar',
     cancel: 'Cancelar',
     submit: 'Finalizar reserva',
+    submitting: 'Reservando…',
     success: 'Reserva criada. Envie o comprovante do PIX para o organizador.',
     errors: {
       numbers: 'Selecione pelo menos um número.',
@@ -113,7 +114,13 @@ export const RAFFLE_CONTENT = {
   admin: {
     title: 'Administração',
     description: 'Confirme pagamentos, acompanhe a arrecadação e encerre a rifa.',
+    accessTitle: 'Acesso ao painel',
+    accessDescription: 'Informe a chave de administração configurada no Worker.',
+    accessKey: 'Chave de acesso',
+    access: 'Acessar',
+    accessError: 'Chave inválida.',
     backToRaffle: 'Voltar à rifa',
+    logout: 'Sair',
     cards: {
       pending: 'Reservas pendentes',
       paid: 'Reservas pagas',

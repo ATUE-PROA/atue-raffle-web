@@ -39,6 +39,17 @@ export interface Stats {
   revenue: number
 }
 
+export interface RaffleSnapshot {
+  closed: boolean
+  winners: Winner[]
+  occupied: OccupiedNumber[]
+  stats: Stats
+}
+
+export interface AdminData extends RaffleSnapshot {
+  reservations: Reservation[]
+}
+
 export interface ReservationInput {
   customerName: string
   customerPhone: string

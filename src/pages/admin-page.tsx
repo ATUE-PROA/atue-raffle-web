@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
   Bar,
   BarChart,
@@ -17,6 +17,7 @@ import { WinnersList } from '@/components/raffle/winners-list'
 import { Button } from '@/components/ui/button'
 import { FormAlert } from '@/components/ui/form-alert'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Table,
   TableBody,
@@ -25,14 +26,117 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { RAFFLE_CONTENT } from '@/content/raffle'
-import { useRaffle } from '@/contexts/raffle-provider'
+import { RAFFLE, RAFFLE_CONTENT } from '@/content/raffle'
 import { formatBRL, padNumber } from '@/lib/raffle'
-import type { Reservation } from '@/types/raffle'
+import {
+  ApiError,
+  cancelReservation,
+  closeRaffle,
+  confirmReservation,
+  getAdminData,
+  reopenRaffle,
+  resetRaffle,
+} from '@/services/api'
+import type { AdminData, Reservation } from '@/types/raffle'
 
-// Produção: proteja /admin no edge (Cloudflare Access); não há senha no cliente.
+const ADMIN_KEY_STORAGE = 'rifa-admin-key'
+const REFRESH_MS = 15000
+
 export function AdminPage() {
-  return <AdminDashboard />
+  const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem(ADMIN_KEY_STORAGE) ?? '')
+
+  if (!adminKey) {
+    return (
+      <AdminAccess
+        onAccess={(key) => {
+          sessionStorage.setItem(ADMIN_KEY_STORAGE, key)
+          setAdminKey(key)
+        }}
+      />
+    )
+  }
+
+  return (
+    <AdminDashboard
+      adminKey={adminKey}
+      onLogout={() => {
+        sessionStorage.removeItem(ADMIN_KEY_STORAGE)
+        setAdminKey('')
+      }}
+    />
+  )
+}
+
+function AdminAccess({ onAccess }: { onAccess: (key: string) => void }) {
+  const [value, setValue] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const key = value.trim()
+    if (!key) return
+
+    setBusy(true)
+    setError(null)
+    try {
+      await getAdminData(key)
+      onAccess(key)
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 401
+          ? RAFFLE_CONTENT.admin.accessError
+          : 'Não foi possível validar a chave. Verifique a API.',
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <main className="mx-auto w-full max-w-md px-4 py-16 sm:px-6">
+      <div className="border-t border-border pt-8">
+        <h1 className="text-section">{RAFFLE_CONTENT.admin.accessTitle}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          {RAFFLE_CONTENT.admin.accessDescription}
+        </p>
+
+        <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
+          <div className="grid gap-2">
+            <Label htmlFor="admin-key">{RAFFLE_CONTENT.admin.accessKey}</Label>
+            <Input
+              id="admin-key"
+              type="password"
+              autoComplete="current-password"
+              value={value}
+              onChange={(event) => {
+                setValue(event.target.value)
+                setError(null)
+              }}
+              required
+            />
+          </div>
+
+          {error ? (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
+
+          <Button type="submit" variant="brand" size="xl" disabled={busy}>
+            {busy ? 'Validando…' : RAFFLE_CONTENT.admin.access}
+          </Button>
+        </form>
+
+        <Link
+          to="/"
+          className="mt-6 inline-block text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:underline focus-visible:outline-none"
+        >
+          {RAFFLE_CONTENT.admin.backToRaffle}
+        </Link>
+      </div>
+    </main>
+  )
 }
 
 type PendingAction =
@@ -42,46 +146,88 @@ type PendingAction =
   | { type: 'reopen' }
   | { type: 'reset' }
 
-function AdminDashboard() {
-  const {
-    state,
-    stats,
-    confirmPayment,
-    cancelReservation,
-    closeRaffle,
-    reopenRaffle,
-    resetRaffle,
-  } = useRaffle()
+function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: () => void }) {
+  const [data, setData] = useState<AdminData | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [action, setAction] = useState<PendingAction | null>(null)
   const [drawError, setDrawError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
-  const allPending = state.reservations.filter((reservation) => reservation.status === 'pending')
-  const allPaid = state.reservations.filter((reservation) => reservation.status === 'paid')
+  const load = useCallback(async () => {
+    try {
+      setData(await getAdminData(adminKey))
+      setError(null)
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        onLogout()
+        return
+      }
+      setError(err instanceof Error ? err.message : 'Não foi possível carregar o painel.')
+    }
+  }, [adminKey, onLogout])
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial + polling
+    void load()
+    const timer = setInterval(() => void load(), REFRESH_MS)
+    return () => clearInterval(timer)
+  }, [load])
+
+  const reservations = useMemo(() => data?.reservations ?? [], [data])
+  const stats = data?.stats ?? {
+    total: RAFFLE.totalNumbers,
+    available: RAFFLE.totalNumbers,
+    pending: 0,
+    paid: 0,
+    revenue: 0,
+  }
+
+  const allPending = reservations.filter((reservation) => reservation.status === 'pending')
+  const allPaid = reservations.filter((reservation) => reservation.status === 'paid')
   const pendingReservations = allPending.filter((reservation) => matchesQuery(reservation, query))
   const paidReservations = allPaid.filter((reservation) => matchesQuery(reservation, query))
 
-  const revenueData = useMemo(() => buildRevenueData(state.reservations), [state.reservations])
-  const indications = useMemo(() => buildIndications(state.reservations), [state.reservations])
+  const revenueData = useMemo(() => buildRevenueData(reservations), [reservations])
+  const indications = useMemo(() => buildIndications(reservations), [reservations])
   const topIndications = [...indications].sort((a, b) => b.refs - a.refs).slice(0, 10)
   const hasRevenue = revenueData.some((item) => item.value > 0)
   const progress = Math.min(100, Math.round((stats.paid / stats.total) * 100))
+  const closed = data?.closed ?? false
+  const winners = data?.winners ?? []
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (!action) return
-    if (action.type === 'pay') confirmPayment(action.reservation.id)
-    if (action.type === 'cancel') cancelReservation(action.reservation.id)
-    if (action.type === 'reopen') reopenRaffle()
-    if (action.type === 'reset') resetRaffle()
-    if (action.type === 'draw') {
-      const winners = closeRaffle()
-      setDrawError(winners.length === 0 ? RAFFLE_CONTENT.admin.drawNoPaid : null)
+
+    setBusy(true)
+    setDrawError(null)
+
+    try {
+      if (action.type === 'pay') await confirmReservation(adminKey, action.reservation.id)
+      if (action.type === 'cancel') await cancelReservation(adminKey, action.reservation.id)
+      if (action.type === 'reopen') await reopenRaffle(adminKey)
+      if (action.type === 'reset') await resetRaffle(adminKey)
+      if (action.type === 'draw') await closeRaffle(adminKey)
+      await load()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Não foi possível concluir a ação.'
+      if (action.type === 'draw') setDrawError(message)
+      else setError(message)
+    } finally {
+      setBusy(false)
+      setAction(null)
     }
-    setAction(null)
   }
 
   const confirmContent = getConfirmContent(action)
+
+  if (!data && !error) {
+    return (
+      <main className="mx-auto w-full max-w-6xl px-4 py-16 text-sm text-muted-foreground sm:px-6">
+        Carregando painel…
+      </main>
+    )
+  }
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
@@ -93,10 +239,21 @@ function AdminDashboard() {
             {RAFFLE_CONTENT.admin.description}
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link to="/">{RAFFLE_CONTENT.admin.backToRaffle}</Link>
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button asChild variant="ghost">
+            <Link to="/">{RAFFLE_CONTENT.admin.backToRaffle}</Link>
+          </Button>
+          <Button type="button" variant="outline" onClick={onLogout}>
+            {RAFFLE_CONTENT.admin.logout}
+          </Button>
+        </div>
       </header>
+
+      {error ? (
+        <div className="mt-4">
+          <FormAlert tone="error" title="Falha ao carregar dados" description={error} />
+        </div>
+      ) : null}
 
       <section className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-5" aria-label="Indicadores">
         <MetricCard label={RAFFLE_CONTENT.admin.cards.pending} value={String(allPending.length)} />
@@ -274,6 +431,7 @@ function AdminDashboard() {
                     type="button"
                     variant="brand"
                     size="sm"
+                    disabled={busy}
                     onClick={() => setAction({ type: 'pay', reservation })}
                   >
                     {RAFFLE_CONTENT.admin.confirm}
@@ -282,6 +440,7 @@ function AdminDashboard() {
                     type="button"
                     variant="destructive"
                     size="sm"
+                    disabled={busy}
                     onClick={() => setAction({ type: 'cancel', reservation })}
                   >
                     {RAFFLE_CONTENT.admin.cancel}
@@ -320,19 +479,20 @@ function AdminDashboard() {
 
       <section className="mt-10 border-t border-border pt-6" aria-labelledby="draw-title">
         <h2 id="draw-title" className="text-section">
-          {state.closed ? RAFFLE_CONTENT.admin.winnersTitle : RAFFLE_CONTENT.admin.drawTitle}
+          {closed ? RAFFLE_CONTENT.admin.winnersTitle : RAFFLE_CONTENT.admin.drawTitle}
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           {RAFFLE_CONTENT.admin.drawDescription}
         </p>
 
-        {state.closed ? (
+        {closed ? (
           <div className="mt-4 flex flex-col gap-4">
-            <WinnersList winners={state.winners} />
+            <WinnersList winners={winners} />
             <Button
               type="button"
               variant="outline"
               className="w-fit"
+              disabled={busy}
               onClick={() => setAction({ type: 'reopen' })}
             >
               {RAFFLE_CONTENT.admin.reopen}
@@ -344,7 +504,7 @@ function AdminDashboard() {
               type="button"
               variant="brand"
               className="w-fit"
-              disabled={stats.paid === 0}
+              disabled={stats.paid === 0 || busy}
               onClick={() => setAction({ type: 'draw' })}
             >
               {RAFFLE_CONTENT.admin.draw}
@@ -358,12 +518,13 @@ function AdminDashboard() {
 
       <div className="mt-10 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground">
-          Dados salvos neste navegador (demonstração local).
+          Dados salvos no Cloudflare D1. Atualização automática a cada 15 segundos.
         </p>
         <Button
           type="button"
           variant="destructive"
           size="sm"
+          disabled={busy}
           onClick={() => setAction({ type: 'reset' })}
         >
           {RAFFLE_CONTENT.admin.reset}
@@ -379,7 +540,7 @@ function AdminDashboard() {
         message={confirmContent.message}
         confirmLabel={confirmContent.confirmLabel}
         destructive={confirmContent.destructive}
-        onConfirm={handleConfirm}
+        onConfirm={() => void handleConfirm()}
       />
     </main>
   )

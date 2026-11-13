@@ -8,8 +8,16 @@ import { useRaffle } from '@/contexts/raffle-provider'
 import { formatBRL, padNumber } from '@/lib/raffle'
 
 export function PaymentPage() {
-  const { lastReservation } = useRaffle()
+  const { lastReservation, loadingReservation } = useRaffle()
   const [copied, setCopied] = useState(false)
+
+  if (loadingReservation) {
+    return (
+      <main className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        <p className="text-sm text-muted-foreground">Carregando reserva…</p>
+      </main>
+    )
+  }
 
   if (!lastReservation) {
     return (

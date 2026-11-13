@@ -36,6 +36,7 @@ export function ReservationDialog({
   const [phone, setPhone] = useState('')
   const [indication, setIndication] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   const nameId = useId()
   const phoneId = useId()
@@ -50,6 +51,7 @@ export function ReservationDialog({
       setPhone('')
       setIndication('')
       setError(null)
+      setSubmitting(false)
     }
     onOpenChange(next)
   }
@@ -68,13 +70,16 @@ export function ReservationDialog({
     setStep('review')
   }
 
-  function handleConfirm() {
-    const result = createReservation({
+  async function handleConfirm() {
+    setSubmitting(true)
+    setError(null)
+    const result = await createReservation({
       customerName: name,
       customerPhone: phone,
       indication,
       numbers,
     })
+    setSubmitting(false)
 
     if (!result.ok) {
       setError(result.error)
@@ -190,8 +195,13 @@ export function ReservationDialog({
                 <ArrowLeft aria-hidden="true" />
                 {copy.back}
               </Button>
-              <Button type="button" variant="brand" onClick={handleConfirm}>
-                {copy.submit}
+              <Button
+                type="button"
+                variant="brand"
+                onClick={() => void handleConfirm()}
+                disabled={submitting}
+              >
+                {submitting ? copy.submitting : copy.submit}
               </Button>
             </DialogFooter>
           </div>
