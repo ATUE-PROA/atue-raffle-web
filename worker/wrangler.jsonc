@@ -5,13 +5,14 @@
   "compatibility_date": "2026-11-01",
   "observability": { "enabled": true },
   "vars": {
-    "ALLOWED_ORIGIN": "*"
+    "ALLOWED_ORIGIN": "https://rifa.atue.tech"
   },
+  "routes": [{ "pattern": "api-raffle.atue.tech", "custom_domain": true }],
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "atue-raffle",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "e06a1e31-f658-4ad8-b379-3c45f7f4ac75",
       "migrations_dir": "migrations"
     }
   ]

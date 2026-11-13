@@ -45,15 +45,20 @@ Scripts: `npm run build` · `npm run lint` · `npm run format:check` · `npm run
 
 ## Deploy na Cloudflare
 
-1. **Criar o banco:** `npx wrangler d1 create atue-raffle` e cole o `database_id` retornado em `worker/wrangler.jsonc`.
+| Serviço  | URL                            |
+| -------- | ------------------------------ |
+| Frontend | `https://rifa.atue.tech`       |
+| API      | `https://api-raffle.atue.tech` |
+
+1. **Criar o banco:** `npx wrangler d1 create atue-raffle` e coloque o `database_id` em `worker/wrangler.jsonc`.
 2. **Aplicar as migrações:** `npm run db:migrate`.
 3. **Definir a chave do admin:** `npx wrangler secret put ADMIN_KEY --config worker/wrangler.jsonc`.
-4. **Publicar a API:** `npm run deploy:api`.
-5. **Publicar o frontend no Pages:** build `npm run build`, saída `dist` e variável `VITE_API_URL=https://<seu-worker>.workers.dev`.
-6. **Restringir a origem:** ajuste `ALLOWED_ORIGIN` em `worker/wrangler.jsonc` para a URL do Pages e rode `npm run deploy:api` de novo.
-7. **Proteger o painel:** crie uma aplicação no **Cloudflare Access** para `/admin*` (Zero Trust). A chave do admin continua sendo validada pelo Worker.
+4. **Publicar a API:** `npm run deploy:api`. O domínio está em `routes` no `worker/wrangler.jsonc`.
+5. **Publicar o frontend:** `npm run build` e `npm run deploy:web`. O `wrangler.frontend.jsonc` publica `dist/` como assets do Worker, com fallback de SPA via `not_found_handling`.
+6. **Configuração de produção:** a URL da API é `https://api-raffle.atue.tech` (padrão em `src/services/api.ts`); `VITE_API_URL` pode sobrescrever. O `ALLOWED_ORIGIN` fica em `worker/wrangler.jsonc`.
+7. **Proteger o painel:** crie uma aplicação no **Cloudflare Access** para `rifa.atue.tech/admin*` (Zero Trust). A chave do admin continua sendo validada pelo Worker.
 
-`public/_redirects` (`/* /index.html 200`) garante o fallback da SPA no Pages.
+O fallback de SPA é nativo dos assets (`not_found_handling: single-page-application`), então não há `_redirects`.
 
 ## API
 

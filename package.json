@@ -14,7 +14,8 @@
     "worker:check": "tsc -p worker/tsconfig.json",
     "deploy:api": "wrangler deploy --config worker/wrangler.jsonc",
     "db:migrate:local": "wrangler d1 migrations apply atue-raffle --local --config worker/wrangler.jsonc",
-    "db:migrate": "wrangler d1 migrations apply atue-raffle --remote --config worker/wrangler.jsonc"
+    "db:migrate": "wrangler d1 migrations apply atue-raffle --remote --config worker/wrangler.jsonc",
+    "deploy:web": "wrangler deploy --config wrangler.frontend.jsonc"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",
