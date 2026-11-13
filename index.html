@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" sizes="any" href="/atue-icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Rifa com fins pedagógicos em prol da ATUE: escolha seus números, reserve e pague via PIX. A renda apoia a plataforma de conformidade digital."
+    />
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0A0A0A" media="(prefers-color-scheme: dark)" />
+    <meta property="og:title" content="Rifa ATUE" />
+    <meta
+      property="og:description"
+      content="1 número por R$ 3,00 ou 5 por R$ 12,00. Prêmio de R$ 200,00. Rifa com fins pedagógicos: cada bilhete ajuda a levar o ATUE ao Demoday."
+    />
+    <meta property="og:type" content="website" />
+    <title>Rifa ATUE — Conformidade digital</title>
+    <script>
+      ;(function () {
+        var stored = null
+        try {
+          stored = localStorage.getItem('rifa-theme')
+        } catch (error) {
+          stored = null
+        }
+        document.documentElement.classList.toggle('dark', stored === 'dark')
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
