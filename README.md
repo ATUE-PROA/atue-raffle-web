@@ -11,7 +11,7 @@ A interface usa a identidade visual do `atue-web`: mesma paleta, tipografia (Fra
 - Preço promocional: 1 número por R$ 3,00 ou 5 por R$ 12,00.
 - Reserva com nome, WhatsApp e indicação, com revisão antes de finalizar.
 - Página de pagamento com chave PIX, resumo dos números e instruções.
-- Painel admin (acesso por `/admin`) com login, indicadores, progresso, arrecadação por mês, ranking de indicações, confirmação/cancelamento de reservas, exportação CSV e sorteio do prêmio de R$ 200,00.
+- Painel admin em `/admin` com indicadores, progresso, arrecadação por mês, ranking de indicações, confirmação/cancelamento de reservas, exportação CSV e sorteio do prêmio de R$ 200,00.
 - Rifa encerrada exibe os vencedores na página pública.
 
 ## Arte da rifa
@@ -29,19 +29,18 @@ npm run dev
 
 Build de produção: `npm run build` · Lint: `npm run lint` · Formatação: `npm run format:check`.
 
-## Acesso admin (demonstração)
+## Deploy (Cloudflare Pages)
 
-- Endereço: `/admin`
-- E-mail: `admin@atue.local`
-- Senha: `rifa123`
-
-O painel não é divulgado na página de compra; o acesso é direto pela URL.
+- Build command: `npm run build`
+- Output directory: `dist`
+- `public/_redirects` garante o fallback da SPA (`/* /index.html 200`) para as rotas `/pagamento` e `/admin`.
+- O painel `/admin` não tem senha no cliente. Em produção, proteja essa rota no edge com **Cloudflare Access** (Zero Trust) ou um Worker com autenticação. Nunca coloque credenciais no bundle: tudo em `VITE_*` fica visível para qualquer visitante.
 
 ## Persistência
 
 Os dados são salvos em `localStorage` (chave `rifa-state-v1`), o que permite testar o fluxo completo em um único navegador. Não há backend nem atualização em tempo real entre dispositivos. No painel admin, use **Reabrir rifa** para desfazer o encerramento ou **Reiniciar demonstração** para apagar reservas, pagamentos e vencedores.
 
-A chave PIX e as credenciais de demonstração ficam em `src/content/raffle.ts`.
+Para operar de verdade, troque o `localStorage` por uma API com banco de dados. Na Cloudflare, a combinação recomendada é **Pages + Workers + D1**. A chave PIX fica em `src/content/raffle.ts`.
 
 ## Estrutura
 
