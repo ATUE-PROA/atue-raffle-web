@@ -111,6 +111,9 @@ export function RaffleProvider({ children }: { children: ReactNode }) {
         await refresh()
         return { ok: true, reservation }
       } catch (err) {
+        // Conflito ou falha: atualiza a grade antes de devolver o erro, para os
+        // números recém-ocupados saírem da seleção do comprador.
+        await refresh()
         return {
           ok: false,
           error: err instanceof Error ? err.message : 'Não foi possível reservar.',

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Minus, Plus, Search, Shuffle, Ticket, Trophy } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -59,6 +59,15 @@ export function HomePage() {
   const [notice, setNotice] = useState<string | null>(null)
 
   const total = calculateTotal(selected.length)
+
+  // Número que outra pessoa reservou sai da seleção, senão a compra trava em 409.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reconcilia a seleção com a grade
+    setSelected((current) => {
+      const next = current.filter((number) => !occupied.has(number))
+      return next.length === current.length ? current : next
+    })
+  }, [occupied])
 
   function toggleNumber(number: number) {
     setNotice(null)
