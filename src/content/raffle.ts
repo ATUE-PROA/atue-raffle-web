@@ -4,8 +4,8 @@ export const RAFFLE = {
   bundleSize: 5,
   bundlePrice: 12,
   prizes: 1,
-  pixKey: 'rifa@atue.com.br',
-  pixHolder: 'ATUE',
+  pixKey: '+5511980523876',
+  pixHolder: 'ANA LUIZA DE MORAIS BELLINI',
 } as const
 
 export const RAFFLE_CONTENT = {
