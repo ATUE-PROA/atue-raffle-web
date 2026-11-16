@@ -83,7 +83,7 @@ export function RaffleProvider({ children }: { children: ReactNode }) {
       const { reservation } = await getReservation(id)
       setLastReservation(reservation)
     } catch {
-      // Reserva removida no reset da demonstração.
+      // Reserva removida no reset da rifa.
     } finally {
       setLoadingReservation(false)
     }

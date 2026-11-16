@@ -10,7 +10,7 @@ export const RAFFLE = {
 
 export const RAFFLE_CONTENT = {
   brand: 'Rifa ATUE',
-  footerNote: 'Fins pedagógicos · demonstração local',
+  footerNote: 'Fins pedagógicos',
   hero: {
     eyebrow: 'Sorteio',
     title: 'Rifa em prol da ATUE',
@@ -166,8 +166,8 @@ export const RAFFLE_CONTENT = {
     reopen: 'Reabrir rifa',
     reopenTitle: 'Reabrir a rifa?',
     reopenMessage: 'A grade volta a aceitar reservas. Os vencedores do sorteio serão apagados.',
-    reset: 'Reiniciar demonstração',
-    resetTitle: 'Reiniciar demonstração?',
+    reset: 'Reiniciar rifa',
+    resetTitle: 'Reiniciar rifa?',
     resetMessage:
       'Todas as reservas, pagamentos e vencedores serão apagados. A ação não pode ser desfeita.',
     confirmPaymentTitle: 'Confirmar pagamento?',
