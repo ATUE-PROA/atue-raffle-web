@@ -15,7 +15,7 @@ export const RAFFLE_CONTENT = {
     eyebrow: 'Sorteio',
     title: 'Rifa em prol da ATUE',
     description:
-      'Ajude o ATUE, plataforma de conformidade digital para PMEs, a chegar ao Demoday. Rifa com fins pedagógicos.',
+      'A ATUE descomplica a conformidade digital para pequenas e médias empresas. Aqui é simples: escolha seus números, torça e leve o prêmio.',
     prize: 'Prêmio de R$ 200,00',
     artAlt: 'Arte da rifa ATUE',
     artPlaceholder: 'Arte da rifa',
@@ -25,12 +25,22 @@ export const RAFFLE_CONTENT = {
     { label: '1 número', detail: 'R$ 3,00', promo: false },
     { label: '5 números', detail: 'R$ 12,00', promo: true },
   ],
-  stats: {
-    total: 'Total',
-    available: 'Livres',
-    pending: 'Reservados',
-    paid: 'Pagos',
-    progress: 'Progresso das vendas',
+  playful: {
+    label: 'Como funciona',
+    steps: [
+      { title: 'Escolha', detail: 'Pegue um número ou deixe a sorte apontar.' },
+      { title: 'Torça', detail: 'Guarde seu bilhete e cruze os dedos.' },
+      { title: 'Comemore', detail: 'Se o seu número cantar, o prêmio é seu.' },
+    ],
+  },
+  cheer: {
+    label: 'Ânimo da torcida',
+    levels: [
+      'Aquecendo a torcida…',
+      'Pegando o ritmo…',
+      'O clima está bom demais…',
+      'A torcida está em festa!',
+    ],
   },
   picker: {
     title: 'Escolha seus bilhetes',

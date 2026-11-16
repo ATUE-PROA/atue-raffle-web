@@ -8,31 +8,13 @@ import { WinnersList } from '@/components/raffle/winners-list'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Progress } from '@/components/ui/progress'
 import { RAFFLE, RAFFLE_CONTENT } from '@/content/raffle'
 import { useRaffle } from '@/contexts/raffle-provider'
 import { calculateTotal, formatBRL, padNumber, shuffle } from '@/lib/raffle'
 import { cn } from '@/lib/utils'
 
 const QUICK_QUANTITIES = RAFFLE_CONTENT.picker.quick
-
-function StatCard({
-  label,
-  value,
-  highlight,
-}: {
-  label: string
-  value: number
-  highlight?: boolean
-}) {
-  return (
-    <div>
-      <p className="text-eyebrow text-muted-foreground">{label}</p>
-      <p className={cn('mt-1 text-2xl font-semibold tracking-tight', highlight && 'text-blue-600')}>
-        {value.toLocaleString('pt-BR')}
-      </p>
-    </div>
-  )
-}
 
 function RaffleArt() {
   const [failed, setFailed] = useState(false)
@@ -62,6 +44,11 @@ function RaffleArt() {
 export function HomePage() {
   const { occupied, stats, closed, winners, loading, error, refresh } = useRaffle()
   const navigate = useNavigate()
+
+  // Lúdico de propósito: 2% a cada 3 números pagos, travado em 64% para ninguém
+  // calcular a arrecadação pela barra.
+  const cheerPercent = Math.min(64, Math.floor(stats.paid / 3) * 2)
+  const cheerLabel = RAFFLE_CONTENT.cheer.levels[Math.min(3, Math.floor(cheerPercent / 16))]
 
   const [mode, setMode] = useState<'auto' | 'manual'>('auto')
   const [selected, setSelected] = useState<number[]>([])
@@ -170,13 +157,30 @@ export function HomePage() {
       ) : (
         <>
           <section
-            className="mt-10 grid grid-cols-2 gap-x-6 gap-y-5 border-y border-border py-5 sm:grid-cols-4"
-            aria-label="Resumo da rifa"
+            className="mt-10 grid gap-5 border-y border-border py-5 sm:grid-cols-3"
+            aria-label={RAFFLE_CONTENT.playful.label}
           >
-            <StatCard label={RAFFLE_CONTENT.stats.total} value={stats.total} />
-            <StatCard label={RAFFLE_CONTENT.stats.available} value={stats.available} highlight />
-            <StatCard label={RAFFLE_CONTENT.stats.pending} value={stats.pending} />
-            <StatCard label={RAFFLE_CONTENT.stats.paid} value={stats.paid} />
+            {RAFFLE_CONTENT.playful.steps.map((step, index) => (
+              <div key={step.title} className="flex items-baseline gap-3">
+                <span className="text-eyebrow text-blue-600">0{index + 1}</span>
+                <div>
+                  <p className="font-semibold tracking-tight">{step.title}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{step.detail}</p>
+                </div>
+              </div>
+            ))}
+          </section>
+
+          <section className="mt-8" aria-label={RAFFLE_CONTENT.cheer.label}>
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-eyebrow text-muted-foreground">{RAFFLE_CONTENT.cheer.label}</p>
+              <p className="text-sm font-medium text-blue-600">{cheerLabel}</p>
+            </div>
+            <Progress
+              value={cheerPercent}
+              aria-label={RAFFLE_CONTENT.cheer.label}
+              className="mt-2 h-2.5"
+            />
           </section>
 
           <section className="mt-12 border-t border-border pt-6" aria-labelledby="picker-title">
