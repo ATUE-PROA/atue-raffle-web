@@ -3,12 +3,12 @@ import { Minus, Plus, Search, Shuffle, Ticket, Trophy } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { NumberGrid } from '@/components/raffle/number-grid'
+import { CheerProgress } from '@/components/raffle/cheer-progress'
 import { ReservationDialog } from '@/components/raffle/reservation-dialog'
 import { WinnersList } from '@/components/raffle/winners-list'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
 import { RAFFLE, RAFFLE_CONTENT } from '@/content/raffle'
 import { useRaffle } from '@/contexts/raffle-provider'
 import { calculateTotal, formatBRL, padNumber, shuffle } from '@/lib/raffle'
@@ -185,11 +185,7 @@ export function HomePage() {
               <p className="text-eyebrow text-muted-foreground">{RAFFLE_CONTENT.cheer.label}</p>
               <p className="text-sm font-medium text-blue-600">{cheerLabel}</p>
             </div>
-            <Progress
-              value={cheerPercent}
-              aria-label={RAFFLE_CONTENT.cheer.label}
-              className="mt-2 h-2.5"
-            />
+            <CheerProgress value={cheerPercent} label={RAFFLE_CONTENT.cheer.label} />
           </section>
 
           <section className="mt-12 border-t border-border pt-6" aria-labelledby="picker-title">
