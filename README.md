@@ -20,6 +20,7 @@ A interface usa a identidade visual do `atue-web`: mesma paleta, tipografia (Fra
 - Página de pagamento com chave PIX, resumo dos números e instruções.
 - Painel admin com indicadores, progresso, arrecadação por mês, ranking de indicações, confirmação/cancelamento de reservas, exportação CSV e sorteio do prêmio de R$ 200,00.
 - Rifa encerrada exibe os vencedores na página pública.
+- Aviso automático para quem abre o link dentro do Instagram, Facebook, Messenger ou TikTok: esses navegadores embutidos bloqueiam a conexão com a API, então a página ensina a abrir no Chrome (Android) ou Safari (iOS) e oferece um botão para copiar o link.
 
 A grade é atualizada automaticamente a cada 15 segundos.
 
@@ -40,6 +41,8 @@ npm run dev                                    # Vite em :5173 (proxy de /api)
 ```
 
 Acesse `http://localhost:5173`. O painel fica em `/admin` e pede a `ADMIN_KEY` configurada em `worker/.dev.vars`.
+
+Para conferir o aviso de navegador embutido sem abrir o link no Instagram, use `http://localhost:5173/?inapp=instagram` (adicione `&platform=ios` para ver as instruções do Safari). O atalho só existe em modo de desenvolvimento.
 
 Scripts: `npm run build` · `npm run lint` · `npm run format:check` · `npm run worker:check`.
 
