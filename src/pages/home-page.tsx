@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RAFFLE, RAFFLE_CONTENT } from '@/content/raffle'
 import { useRaffle } from '@/contexts/raffle-provider'
+import { detectInAppBrowser, fillInAppBrowserCopy } from '@/lib/in-app-browser'
 import { calculateTotal, formatBRL, padNumber, shuffle } from '@/lib/raffle'
 import { cn } from '@/lib/utils'
 
@@ -57,6 +58,7 @@ export function HomePage() {
   const [quantity, setQuantity] = useState(10)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  const [inAppBrowser] = useState(detectInAppBrowser)
 
   const total = calculateTotal(selected.length)
 
@@ -106,8 +108,13 @@ export function HomePage() {
   return (
     <main aria-busy={loading} className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
       {error ? (
-        <p role="alert" className="mb-6 text-sm text-destructive">
+        <p role="alert" className="mb-6 max-w-3xl text-sm text-destructive">
           {error}{' '}
+          {inAppBrowser ? (
+            <span className="font-medium">
+              {fillInAppBrowserCopy(RAFFLE_CONTENT.inAppBrowser.errorHint, inAppBrowser)}
+            </span>
+          ) : null}{' '}
           <button
             type="button"
             onClick={() => void refresh()}

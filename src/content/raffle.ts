@@ -25,6 +25,34 @@ export const RAFFLE_CONTENT = {
     { label: '1 número', detail: 'R$ 3,00', promo: false },
     { label: '5 números', detail: 'R$ 12,00', promo: true },
   ],
+  inAppBrowser: {
+    bannerTitle: 'Abra a rifa no {browser}',
+    bannerDescription:
+      'Você está no navegador do {app}, que bloqueia a conexão com o servidor da rifa. Por isso os números não carregam.',
+    steps: {
+      android: [
+        'Toque nos três pontinhos (⋮) no canto superior direito.',
+        'Escolha “Abrir no Chrome” ou “Abrir no navegador externo”.',
+        'A rifa abre no {browser} e carrega normalmente.',
+      ],
+      ios: [
+        'Toque nos três pontinhos (•••) no canto superior direito.',
+        'Escolha “Abrir no Safari”.',
+        'A rifa abre no {browser} e carrega normalmente.',
+      ],
+      other: [
+        'Abra o menu do navegador do {app}.',
+        'Escolha a opção para abrir no {browser}.',
+        'A rifa abre no {browser} e carrega normalmente.',
+      ],
+    },
+    copy: 'Copiar link da rifa',
+    copied: 'Link copiado',
+    copyFallback: 'Não foi possível copiar. Toque e segure o link abaixo para copiar.',
+    dismiss: 'Continuar mesmo assim',
+    errorHint:
+      'Para carregar os números, abra este link no {browser}: toque nos três pontinhos no topo e escolha “Abrir no {browser}”.',
+  },
   playful: {
     label: 'Como funciona',
     steps: [
