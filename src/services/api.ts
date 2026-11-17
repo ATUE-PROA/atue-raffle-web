@@ -10,6 +10,9 @@ const BASE_URL = (
   import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? 'https://api-raffle.atue.tech' : '')
 ).replace(/\/$/, '')
 
+const TIMEOUT_MS = 12000
+const RETRY_DELAY_MS = 600
+
 export class ApiError extends Error {
   status: number
 
@@ -26,17 +29,44 @@ interface RequestOptions {
   adminKey?: string
 }
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = { 'content-type': 'application/json' }
+async function send(path: string, options: RequestOptions): Promise<Response> {
+  // Sem corpo não enviamos content-type: isso evita o preflight de CORS nos
+  // GETs, que alguns navegadores embutidos (Instagram, Facebook) tratam mal.
+  const headers: Record<string, string> = {}
+  if (options.body !== undefined) headers['content-type'] = 'application/json'
   if (options.adminKey) headers['x-admin-key'] = options.adminKey
 
-  let response: Response
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+
   try {
-    response = await fetch(`${BASE_URL}${path}`, {
+    return await fetch(`${BASE_URL}${path}`, {
       method: options.method ?? 'GET',
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: controller.signal,
     })
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+async function sendWithRetry(path: string, options: RequestOptions): Promise<Response> {
+  try {
+    return await send(path, options)
+  } catch (error) {
+    // Webviews às vezes derrubam a primeira conexão; repetir o GET resolve.
+    // POST não é repetido para não arriscar uma reserva duplicada.
+    if ((options.method ?? 'GET') !== 'GET') throw error
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS))
+    return send(path, options)
+  }
+}
+
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  let response: Response
+  try {
+    response = await sendWithRetry(path, options)
   } catch {
     throw new ApiError('Não foi possível conectar ao servidor.', 0)
   }
