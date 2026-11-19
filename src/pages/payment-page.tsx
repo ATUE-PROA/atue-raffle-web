@@ -51,7 +51,7 @@ export function PaymentPage() {
     <main className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6">
       <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-start">
         <section className="border-t border-border pt-6" aria-labelledby="payment-title">
-          <p className="text-eyebrow text-blue-600">{RAFFLE_CONTENT.payment.pixTitle}</p>
+          <p className="text-label text-muted-foreground">{RAFFLE_CONTENT.payment.pixTitle}</p>
           <h1 id="payment-title" className="text-section mt-2">
             {RAFFLE_CONTENT.payment.title}
           </h1>
@@ -59,15 +59,15 @@ export function PaymentPage() {
             {RAFFLE_CONTENT.payment.description}
           </p>
 
-          <div className="mt-6 rounded-lg border border-border p-5 shadow-soft">
-            <p className="text-eyebrow text-muted-foreground">{RAFFLE_CONTENT.payment.numbers}</p>
+          <div className="mt-6 card-surface p-5">
+            <p className="text-label text-muted-foreground">{RAFFLE_CONTENT.payment.numbers}</p>
             <p className="mt-2 font-heading text-3xl leading-none tracking-tight tabular-nums">
               {lastReservation.numbers.map(padNumber).join(' · ')}
             </p>
 
             <div className="mt-5 flex items-end justify-between gap-4 border-t border-border pt-4">
               <div>
-                <p className="text-eyebrow text-muted-foreground">{RAFFLE_CONTENT.payment.total}</p>
+                <p className="text-label text-muted-foreground">{RAFFLE_CONTENT.payment.total}</p>
                 <p className="mt-1 text-2xl font-semibold tracking-tight">
                   {formatBRL(lastReservation.totalAmount)}
                 </p>
@@ -107,9 +107,7 @@ export function PaymentPage() {
           </p>
 
           <div className="mt-4">
-            <p className="text-eyebrow text-muted-foreground">
-              {RAFFLE_CONTENT.payment.pixKeyLabel}
-            </p>
+            <p className="text-label text-muted-foreground">{RAFFLE_CONTENT.payment.pixKeyLabel}</p>
             <code className="mt-2 block rounded-md border border-border bg-muted/40 px-3 py-2.5 text-sm break-all">
               {RAFFLE.pixKey}
             </code>

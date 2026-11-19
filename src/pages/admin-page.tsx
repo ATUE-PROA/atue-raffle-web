@@ -233,8 +233,7 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
     <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
       <header className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-eyebrow text-blue-600">Painel</p>
-          <h1 className="text-display mt-2">{RAFFLE_CONTENT.admin.title}</h1>
+          <h1 className="text-display">{RAFFLE_CONTENT.admin.title}</h1>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground">
             {RAFFLE_CONTENT.admin.description}
           </p>
@@ -411,7 +410,7 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
             pendingReservations.map((reservation) => (
               <li
                 key={reservation.id}
-                className="flex flex-col gap-4 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-4 card-surface p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
                   <p className="font-medium">{reservation.customerName}</p>
@@ -548,8 +547,8 @@ function AdminDashboard({ adminKey, onLogout }: { adminKey: string; onLogout: ()
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border p-4">
-      <p className="text-eyebrow text-muted-foreground">{label}</p>
+    <div className="card-surface p-4">
+      <p className="text-label text-muted-foreground">{label}</p>
       <p className="mt-2 text-xl font-semibold tracking-tight tabular-nums">{value}</p>
     </div>
   )

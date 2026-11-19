@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Minus, Plus, Search, Shuffle, Ticket, Trophy } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -13,6 +13,7 @@ import { RAFFLE, RAFFLE_CONTENT } from '@/content/raffle'
 import { useRaffle } from '@/contexts/raffle-provider'
 import { calculateTotal, formatBRL, padNumber, shuffle } from '@/lib/raffle'
 import { cn } from '@/lib/utils'
+import { useEnter } from '@/lib/use-enter'
 
 const QUICK_QUANTITIES = RAFFLE_CONTENT.picker.quick
 
@@ -20,7 +21,7 @@ function RaffleArt() {
   const [failed, setFailed] = useState(false)
 
   return (
-    <div className="mx-auto w-full max-w-[320px] overflow-hidden rounded-xl border border-border bg-muted/30 shadow-soft lg:mx-0">
+    <div className="mx-auto w-full max-w-[320px] overflow-hidden card-surface bg-muted/30 lg:mx-0">
       {failed ? (
         <div className="flex aspect-square flex-col items-center justify-center gap-3 p-6 text-center">
           <img src="/atue-icon.svg" alt="" aria-hidden="true" className="size-14" />
@@ -42,6 +43,9 @@ function RaffleArt() {
 }
 
 export function HomePage() {
+  const enterRef = useRef<HTMLDivElement>(null)
+  useEnter(enterRef, 0.06)
+
   const { occupied, stats, closed, winners, loading, error, refresh } = useRaffle()
   const navigate = useNavigate()
 
@@ -119,13 +123,14 @@ export function HomePage() {
       ) : null}
       <section className="grid gap-8 lg:grid-cols-[1fr_300px] lg:items-start">
         <div>
-          <p className="text-eyebrow text-blue-600">{RAFFLE_CONTENT.hero.eyebrow}</p>
-          <h1 className="text-display mt-3">{RAFFLE_CONTENT.hero.title}</h1>
-          <p className="mt-3 max-w-xl text-base leading-relaxed text-muted-foreground">
+          <h1 data-enter className="text-display">
+            {RAFFLE_CONTENT.hero.title}
+          </h1>
+          <p data-enter className="mt-3 max-w-xl text-base leading-relaxed text-muted-foreground">
             {RAFFLE_CONTENT.hero.description}
           </p>
 
-          <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div data-enter className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2">
             {RAFFLE_CONTENT.priceTags.map((tag) => (
               <p key={tag.label} className="text-sm">
                 <span className="text-muted-foreground">{tag.label}</span>{' '}
@@ -143,7 +148,9 @@ export function HomePage() {
           </div>
         </div>
 
-        <RaffleArt />
+        <div data-enter>
+          <RaffleArt />
+        </div>
       </section>
 
       {closed ? (
@@ -166,12 +173,13 @@ export function HomePage() {
       ) : (
         <>
           <section
+            data-enter
             className="mt-10 grid gap-5 border-y border-border py-5 sm:grid-cols-3"
             aria-label={RAFFLE_CONTENT.playful.label}
           >
             {RAFFLE_CONTENT.playful.steps.map((step, index) => (
               <div key={step.title} className="flex items-baseline gap-3">
-                <span className="text-eyebrow text-blue-600">0{index + 1}</span>
+                <span className="text-label text-muted-foreground">0{index + 1}</span>
                 <div>
                   <p className="font-semibold tracking-tight">{step.title}</p>
                   <p className="mt-0.5 text-sm text-muted-foreground">{step.detail}</p>
@@ -180,15 +188,19 @@ export function HomePage() {
             ))}
           </section>
 
-          <section className="mt-8" aria-label={RAFFLE_CONTENT.cheer.label}>
+          <section data-enter className="mt-8" aria-label={RAFFLE_CONTENT.cheer.label}>
             <div className="flex items-baseline justify-between gap-3">
-              <p className="text-eyebrow text-muted-foreground">{RAFFLE_CONTENT.cheer.label}</p>
+              <p className="text-label text-muted-foreground">{RAFFLE_CONTENT.cheer.label}</p>
               <p className="text-sm font-medium text-blue-600">{cheerLabel}</p>
             </div>
             <CheerProgress value={cheerPercent} label={RAFFLE_CONTENT.cheer.label} />
           </section>
 
-          <section className="mt-12 border-t border-border pt-6" aria-labelledby="picker-title">
+          <section
+            data-enter
+            className="mt-12 border-t border-border pt-6"
+            aria-labelledby="picker-title"
+          >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 id="picker-title" className="text-section">
