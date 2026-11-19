@@ -159,7 +159,7 @@ export function ReservationDialog({
           </form>
         ) : (
           <div className="grid gap-4">
-            <dl className="grid gap-3 rounded-lg border border-border p-4 text-sm">
+            <dl className="grid gap-3 card-surface p-4 text-sm">
               <div className="flex items-start justify-between gap-4">
                 <dt className="text-muted-foreground">{copy.name}</dt>
                 <dd className="text-right font-medium">{name}</dd>

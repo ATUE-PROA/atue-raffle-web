@@ -1,10 +1,11 @@
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { RAFFLE, RAFFLE_CONTENT } from '@/content/raffle'
 import { padNumber } from '@/lib/raffle'
 import { cn } from '@/lib/utils'
 import type { OccupiedNumber } from '@/types/raffle'
+import { useEnter } from '@/lib/use-enter'
 
 interface NumberGridProps {
   occupied: Map<number, OccupiedNumber>
@@ -84,8 +85,11 @@ export function NumberGrid({
 
   const hasMore = !term && visibleCount < RAFFLE.totalNumbers
 
+  const gridRef = useRef<HTMLDivElement>(null)
+  useEnter(gridRef, 0.012)
+
   return (
-    <div className="mt-4">
+    <div ref={gridRef} className="mt-4">
       <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-8 sm:gap-2 md:grid-cols-10">
         {items}
       </div>

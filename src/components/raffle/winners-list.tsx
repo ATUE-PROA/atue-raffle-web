@@ -12,9 +12,9 @@ export function WinnersList({ winners }: { winners: Winner[] }) {
   return (
     <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {winners.map((winner) => (
-        <li key={winner.position} className="rounded-lg border border-border p-4">
+        <li key={winner.position} className="card-surface p-4">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-eyebrow text-muted-foreground">{winner.position}º prêmio</span>
+            <span className="text-label text-muted-foreground">{winner.position}º prêmio</span>
             <Trophy aria-hidden="true" className="size-4 text-blue-600" />
           </div>
           <p className="mt-3 font-heading text-3xl leading-none tracking-tight">
